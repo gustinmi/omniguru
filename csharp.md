@@ -1,17 +1,16 @@
-
 # CSHARP Code Snippets
 
 ## Debugging utils
 
 1. Trigger debugging breakpoint
-```
+```csharp
 Debugger.Break();
 ```
 
 ## Statements
 
-### Switch
-```
+### Switch with filters
+```csharp
 switch (collection)
 {
 	case null:
@@ -28,11 +27,10 @@ switch (collection)
 }
 ```
 
-### Yield
-
-```
-public List<OpcUaNode> Nodes { get; set; }
-IEnumerable<OpcUaNode> Flatten(OpcUaNode node)
+### Yield break and return
+```csharp
+public List<SomeNode> Nodes { get; set; }
+IEnumerable<SomeNode> Flatten(SomeNode node)
 {
     yield return node;
     if (node.SubNodes == null)
@@ -52,19 +50,19 @@ IEnumerable<OpcUaNode> Flatten(OpcUaNode node)
 ## Datetime
 
 ### Parsing
-```
+```csharp
 DateTime timestamp = DateTime.ParseExact(rs_line, "yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture.DateTimeFormat);
 ```
 ### Unix time
-```
+```csharp
 long timeUnixSeconds = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
 DateTime.UtcNow.ToUnixSeconds();
 ```
-##JSON
+## JSON via Newtonsoft JSON.NET
 
 1. Deserializing
 
-```
+```csharp
 var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
 	new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace }
 );
@@ -72,7 +70,7 @@ var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
 
 
 1. Tracing serialization deseralization
-```
+```csharp
 ITraceWriter traceWriter = new MemoryTraceWriter();
 TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
 	new JsonSerializerSettings { 
@@ -89,7 +87,7 @@ TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
 ### Dictionary
 
 #### Deconstruction
-```
+```csharp
 foreach ((Device d, _) in cachedDevices.Values.ToList())
 {
     d.DeviceDriverDRV?.Stop();
@@ -100,7 +98,7 @@ foreach ((Device d, _) in cachedDevices.Values.ToList())
 ## Streams
 
 1. Read file line by line
-```
+```csharp
 string line;
 using (StreamReader tr = new StreamReader("file1.txt"))
 {
@@ -112,7 +110,7 @@ using (StreamReader tr = new StreamReader("file1.txt"))
 ```
 
 1. Read whole file
-```
+```csharp
 string json;
 
 using (FileStream fs = confFilePath.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -126,7 +124,7 @@ using (FileStream fs = confFilePath.Open(FileMode.Open, FileAccess.Read, FileSha
 
 1. Write file with stream sync
 
-```
+```csharp
 using (FileStream myFileStream = File.Open(queueFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
 {
     using (StreamWriter s = new StreamWriter(myFileStream))
@@ -137,7 +135,7 @@ using (FileStream myFileStream = File.Open(queueFile, FileMode.CreateNew, FileAc
 ```
 
 1. Write file async
-```
+```csharp
 using (var fileStream = new FileStream(this.fileName, FileMode.Append, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
 {
     using (StreamWriter s = new StreamWriter(fileStream))
@@ -150,7 +148,7 @@ using (var fileStream = new FileStream(this.fileName, FileMode.Append, FileAcces
 
 
 1. Text writer and reader
-```
+```csharp
 using (TextWriter wr = new StreamWriter(serverNodeStructurePath, false))
 {
     await wr.WriteAsync(json);
@@ -159,7 +157,7 @@ using (TextWriter wr = new StreamWriter(serverNodeStructurePath, false))
 using (TextReader rr = new StreamReader(serverNodeStructurePath))
 {
     string json = await rr.ReadToEndAsync();
-    nodeFullStructure = JsonConvert.DeserializeObject<OpcUaNodeStructure>(json);
+    nodeFullStructure = JsonConvert.DeserializeObject<SomeNodeStructure>(json);
     nodesList = nodeFullStructure.ToSubscriptionFlatNodeList();
 }
 ```
@@ -168,7 +166,7 @@ using (TextReader rr = new StreamReader(serverNodeStructurePath))
 ## Threading and concurrency
 
 ### Wait for async task
-```
+```csharp
 Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until async completes
 ```
 
@@ -182,7 +180,7 @@ Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until asyn
 
 1. using hardcoded mock
 
-```
+```csharp
 private readonly AdapterJsonFileLoggerOptions optsFixture = new AdapterJsonFileLoggerOptions { Dir = "data" };
 
 var mock = new Mock<IOptions<AdapterJsonFileLoggerOptions>>();
@@ -197,7 +195,7 @@ mock.Setup(ap => ap.Value).Returns(optsFixture);
 
 1. Inlining compiler hint
 
-```
+```csharp
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
 private static bool IsAscii(char c);
 ```
@@ -208,7 +206,7 @@ private static bool IsAscii(char c);
 ### Stopwatch
 
 Tracking execution time
-```
+```csharp
  long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
  // time consuming code
 _logger.Info("Read complited in {0}", DateTimeOffset.Now.ToUnixTimeMilliseconds() - start);
