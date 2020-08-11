@@ -2,7 +2,7 @@
 
 ## Debugging utils
 
-1. Trigger debugging breakpoint
+### Trigger debugging breakpoint
 ```csharp
 Debugger.Break();
 ```
@@ -60,7 +60,7 @@ DateTime.UtcNow.ToUnixSeconds();
 ```
 ## JSON via Newtonsoft JSON.NET
 
-1. Deserializing
+### Deserializing
 
 ```csharp
 var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
@@ -69,7 +69,7 @@ var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
 ```
 
 
-1. Tracing serialization deseralization
+### Tracing serialization deseralization
 ```csharp
 ITraceWriter traceWriter = new MemoryTraceWriter();
 TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
@@ -82,7 +82,6 @@ TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
 ```
 
 ## Collections
-
 
 ### Dictionary
 
@@ -97,7 +96,7 @@ foreach ((Device d, _) in cachedDevices.Values.ToList())
 
 ## Streams
 
-1. Read file line by line
+### Read file line by line
 ```csharp
 string line;
 using (StreamReader tr = new StreamReader("file1.txt"))
@@ -109,7 +108,7 @@ using (StreamReader tr = new StreamReader("file1.txt"))
 };
 ```
 
-1. Read whole file
+### Read whole file
 ```csharp
 string json;
 
@@ -122,7 +121,7 @@ using (FileStream fs = confFilePath.Open(FileMode.Open, FileAccess.Read, FileSha
 }
 ```
 
-1. Write file with stream sync
+### Write file with stream sync
 
 ```csharp
 using (FileStream myFileStream = File.Open(queueFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
@@ -134,7 +133,7 @@ using (FileStream myFileStream = File.Open(queueFile, FileMode.CreateNew, FileAc
 }
 ```
 
-1. Write file async
+### Write file async
 ```csharp
 using (var fileStream = new FileStream(this.fileName, FileMode.Append, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
 {
@@ -145,9 +144,7 @@ using (var fileStream = new FileStream(this.fileName, FileMode.Append, FileAcces
 }
 ```
 
-
-
-1. Text writer and reader
+### Text writer and reader
 ```csharp
 using (TextWriter wr = new StreamWriter(serverNodeStructurePath, false))
 {
@@ -162,7 +159,6 @@ using (TextReader rr = new StreamReader(serverNodeStructurePath))
 }
 ```
 
-
 ## Threading and concurrency
 
 ### Wait for async task
@@ -170,15 +166,11 @@ using (TextReader rr = new StreamReader(serverNodeStructurePath))
 Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until async completes
 ```
 
-### Execute on background 
-
-
-
 ## Unit testing
 
 ### NMOCK
 
-1. using hardcoded mock
+#### Using hardcoded mock
 
 ```csharp
 private readonly AdapterJsonFileLoggerOptions optsFixture = new AdapterJsonFileLoggerOptions { Dir = "data" };
@@ -193,7 +185,7 @@ mock.Setup(ap => ap.Value).Returns(optsFixture);
 
 ## Language and CLR
 
-1. Inlining compiler hint
+### Inlining compiler hint
 
 ```csharp
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -203,9 +195,7 @@ private static bool IsAscii(char c);
 
 ## Recepies
 
-### Stopwatch
-
-Tracking execution time
+### Manual stopwatch - Tracking execution time
 ```csharp
  long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
  // time consuming code
