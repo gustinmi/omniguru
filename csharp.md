@@ -47,6 +47,18 @@ IEnumerable<SomeNode> Flatten(SomeNode node)
 }
 ```
 
+## Object creation 
+
+### Dynamic
+
+```csharp
+dynamic jsonObject = new JObject();
+jsonObject.Date = DateTime.Now;
+jsonObject.Album = "Me Against the world";
+jsonObject.Year = 1995;
+jsonObject.Artist = "2Pac";
+```
+
 ## Datetime
 
 ### Parsing
@@ -111,8 +123,8 @@ using (StreamReader tr = new StreamReader("file1.txt"))
 ### Read whole file
 ```csharp
 string json;
-
-using (FileStream fs = confFilePath.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+FileInfo f = new FileInfo(@"C:\TEMP\test.json");
+using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
 {
     using (StreamReader r = new StreamReader(fs, Encoding.Default))
     {
@@ -158,12 +170,80 @@ using (TextReader rr = new StreamReader(serverNodeStructurePath))
     nodesList = nodeFullStructure.ToSubscriptionFlatNodeList();
 }
 ```
+### Using File class
+```csharp
+File.WriteAllText(fileName, stringContents); 
+```
+
+### Touch file
+```csharp
+File.SetLastWriteTimeUtc(fileName, DateTime.UtcNow);
+```
 
 ## Threading and concurrency
+
+### Get current thread id
+```csharp
+Thread.CurrentThread.ManagedThreadId
+```
 
 ### Wait for async task
 ```csharp
 Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until async completes
+```
+
+## Reflection
+
+### Get method name
+
+```csharp
+MethodBase.GetCurrentMethod()
+```
+
+### Execute all methods marked with attribute
+
+```csharp
+foreach (var methodInfo in tst.GetType().GetMethods())
+{
+    var containsInvokeAttribute = methodInfo.GetCustomAttributes(typeof(TestMethodAttribute)).Any();
+    if (containsInvokeAttribute)
+    {
+        logger.Info($"Invoking {methodInfo.Name}");
+        methodInfo.Invoke(tst, null);
+    }
+}
+```
+
+## Json handling
+
+### Parse json to dictionary like wrapper
+
+From string variable
+
+```csharp
+JObject jo = JObject.Parse((string) msgContents);
+```
+
+From inline string
+
+```csharp
+JObject  o = JObject.Parse(@"{
+  'CPU': 'Intel',
+  'Drives': [
+    'DVD read/writer',
+    '500 gigabyte hard drive'
+  ]
+}");
+```
+
+### Parse json to POCO
+```csharp
+MyClass poco = JsonConvert.DeserializeObject<MyClass>("{\"a\" : 1}");
+```
+
+### Serialize json to string
+```csharp
+string value = JsonConvert.SerializeObject(someObj);
 ```
 
 ## Unit testing
