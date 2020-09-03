@@ -47,9 +47,9 @@ IEnumerable<SomeNode> Flatten(SomeNode node)
 }
 ```
 
-## Object creation 
+## Object ORIENTED 
 
-### Dynamic
+### Dynamic object (no strong typing)
 
 ```csharp
 dynamic jsonObject = new JObject();
@@ -57,6 +57,26 @@ jsonObject.Date = DateTime.Now;
 jsonObject.Album = "Me Against the world";
 jsonObject.Year = 1995;
 jsonObject.Artist = "2Pac";
+```
+
+## Generics
+
+### Generic (extension) method with casting
+
+```csharp
+public static T GetValue<T>(this IDictionary<string, object> dict, string key)
+{
+    if (dict == null) throw new ArgumentNullException(nameof(dict));
+    if (key == null) throw new ArgumentNullException(nameof(key));
+
+    object v = dict[key];
+    if (v is T)
+    {
+        return (T)v;
+    }
+
+    return (T)Convert.ChangeType(v, typeof(T)); ;
+}
 ```
 
 ## Datetime
@@ -105,13 +125,18 @@ foreach ((Device d, _) in cachedDevices.Values.ToList())
 }
 ```
 
-
 ## Streams
+
+### Read file as byte array
+```csharp
+byte[] arr = File.ReadAllBytes(@"C:\TEMP\test.json");
+```
+
 
 ### Read file line by line
 ```csharp
 string line;
-using (StreamReader tr = new StreamReader("file1.txt"))
+using (StreamReader tr = new StreamReader(@"C:\TEMP\test.json"))
 {
     while ((string line = tr.ReadLine()) != null)
     {
@@ -131,6 +156,12 @@ using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
         json = r.ReadToEnd();
     }
 }
+```
+
+### Write file
+
+```csharp
+File.WriteAllText(@"C:\TEMP\test.json", "[1,2,3]")
 ```
 
 ### Write file with stream sync
@@ -187,9 +218,63 @@ File.SetLastWriteTimeUtc(fileName, DateTime.UtcNow);
 Thread.CurrentThread.ManagedThreadId
 ```
 
+### Wait handle
+
+```csharp
+
+// Thread 1
+
+// create handle, not signaled (false)
+EventWaitHandle waiter = new EventWaitHandle(false, EventResetMode.ManualReset);
+
+// we shall wait until signaled 
+waiter.WaitOne()
+// CODE BEYOND is not executed until unblocked
+
+// Thread 2 
+
+waiter.Set(); // signal to unblock
+waiter.Reset(); // set to block
+
+```
+
+
+
 ### Wait for async task
+
+#### Execute wrapper task
+
 ```csharp
 Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until async completes
+```
+
+#### Via Result property
+
+```csharp
+var r = producer.ProduceAsync(tempTopic.Name, new Message<Null, string> { Value = "a message" }).Result;
+Assert.True(r.Status == PersistenceStatus.Persisted);
+```
+
+### Lazy initialization
+
+```csharp
+// Lazy helper to allow runtime check for Mono: usgae bool isM = IsRunningOnMono();
+private static readonly Lazy<bool> IsRunningOnMonoValue = new Lazy<bool>(() => // create and init
+{
+    return Type.GetType("Mono.Runtime") != null;
+});
+```
+
+## Linq for object
+
+```csharp
+var configuredOptionTypes =
+    from descriptor in services
+    let serviceType = descriptor.ServiceType
+    where serviceType.IsGenericType
+    where serviceType.GetGenericTypeDefinition() == typeof(IConfigureNamedOptions<>)
+    let optionType = serviceType.GetGenericArguments()[0]
+    select optionType;
 ```
 
 ## Reflection
@@ -246,11 +331,25 @@ MyClass poco = JsonConvert.DeserializeObject<MyClass>("{\"a\" : 1}");
 string value = JsonConvert.SerializeObject(someObj);
 ```
 
+### Construction using JObject JArray
+
+```csharp
+JArray arr = new JArray();
+JObject c = new JObject();
+c["Type"] = "Capacitor";
+c["Name"] = "Capacitor";
+arr.Add(c);
+JObject d = new JObject();
+d["Type"] = "Fan";
+d["Name"] = "Fan";
+arr.Add(d);
+```
+
 ## Unit testing
 
 ### NMOCK
 
-#### Using hardcoded mock
+#### Using hardcoded object as mock value
 
 ```csharp
 private readonly AdapterJsonFileLoggerOptions optsFixture = new AdapterJsonFileLoggerOptions { Dir = "data" };
@@ -260,6 +359,26 @@ IOptions<AdapterJsonFileLoggerOptions> opts = mock.Object;
 
 // We need to set the Value of IOptions to be the SampleOptions Class
 mock.Setup(ap => ap.Value).Returns(optsFixture);
+```
+
+#### Hardcoded async method call mock 
+
+```csharp
+// Task<Guid?> ExistsAsync(string ip, ushort listenerPort);
+var repoMock = new Mock<IConnectorService>();
+repoMock.Setup(x => x.ExistsAsync("192.168.3.10", 6666)).ReturnsAsync(new Guid("380befcf-74ac-4ac3-8d65-590cee11fce1"));
+```
+
+```csharp
+ repoMock.Setup(x => x.ExistsAsync(It.IsAny<string>(), It.IsAny<ushort>()))
+    .Returns<string, ushort>((x, y) => Task.FromResult(allConnectors.FirstOrDefault(a => a.IP == x && a.ListenerPort == y)?.ConnectorID));
+```
+
+```csharp
+// Task<Guid?> RegisterAsync(string ip, ushort listenerPort, string description);
+repoMock.Setup(x => x.RegisterAsync(It.IsAny<string>(), It.IsAny<ushort>(), It.IsAny<string>()))
+    .Callback<string, ushort, string>((x, y, z) => allConnectors.Add(new Connector() { IP = x, ListenerPort = y, Description = z, ConnectorID = Guid.NewGuid() }))
+    .ReturnsAsync(() => allConnectors[allConnectors.Count - 1].ConnectorID);
 ```
 
 
