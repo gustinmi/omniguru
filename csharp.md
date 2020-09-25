@@ -7,7 +7,42 @@
 Debugger.Break();
 ```
 
+### Print stack trace
+```csharp
+Console.WriteLine(new System.Diagnostics.StackTrace());
+```
+
+## Language
+
+### Cast and type check
+
+```csharp
+if ((propExp is string))
+    string newVariable = propExp as string;
+```
+
+Merge cast with type check
+
+```csharp
+if ((propExp is string newVariable))
+newVariable // is string
+```
+
+
 ## Statements
+
+### nameof operator 
+
+Get the method name
+
+```csharp
+public static void If(FunctionArgs args) 
+{
+    if (args == null) throw new ArgumentNullException(nameof(args)); // param name
+    throw new Exception($"{nameof(If)}"}; // method name
+}
+```
+
 
 ### Switch with filters
 ```csharp
@@ -47,6 +82,81 @@ IEnumerable<SomeNode> Flatten(SomeNode node)
 }
 ```
 
+## Delegates and events
+
+### Assign anonymous delegate handler
+
+```csharp
+someDelegate += delegate (string name) { return name.ToUpper(); };
+```
+
+### Custom event args (returning values)
+
+```csharp
+
+public class CustomEventArgs:EventArgs {
+
+    public bool DoOverride { get; set; }
+    public string Variable1 { get; private set; }
+
+    public myCustomeEventArgs(string variable1 , string variable2 ){
+        DoOverride = false;
+        Variable1 = variable1 ;
+    }
+}
+
+public delegate void myCustomeEventHandler(object sender, myCustomeEventArgs e); // definition of delegate prototype
+
+public event myCustomeEventHandler myCustomeEvent; // event definition
+
+// event fire
+var eventArgs = new myCustomeEventArgs("foo", "bar");
+myCustomeEvent(this, eventArgs);
+
+//Here you can now with the return of the event work with the event args
+if(eventArgs.DoOverride)
+{
+   //Do Something
+}
+
+
+```
+
+### Event handler as Func delegate 
+
+Encapsulates a method that has one parameter (up to 12 possible) and returns a value of the type specified by the TResult parameter. If event returns a value and there are multiple handlers registered the event returns the result value of the last called handler.
+
+```csharp
+
+// delegate TResult Func<in T,out TResult>(T arg); // parameter and return value
+
+event Func<string, bool> theEvent; // definition
+
+theEvent += new Func<string, bool>(HandlerDelegate); // assign delegate
+
+bool HandlerDelegate(string arg) { return true; } // delegate handler
+
+var r = TheEvent("s"); // trigger event
+
+```
+
+### Event handler as a Action delegate
+
+```csharp
+// method that accepts delegate
+void SomeMethod(string foo, Action<bool, string> onCompletedAction){
+    onCompletedAction(true, ""); // execute
+}
+
+// definition of delegate
+Action<bool, string> cbAction = delegate (bool success, string log)
+{
+    Process(success, log); // further processing
+};
+
+
+```
+
 ## Object ORIENTED 
 
 ### Dynamic object (no strong typing)
@@ -79,6 +189,36 @@ public static T GetValue<T>(this IDictionary<string, object> dict, string key)
 }
 ```
 
+```csharp
+internal T TryGetValue<T>(out T value)
+{
+    
+    T value = (T)TypeDescriptor.GetConverter(typeof(T)).ConvertFromString(e.Value);
+    return value;
+}
+```
+
+### Generics and reflection - hard copy object
+
+```csharp
+public static T Clone<T>(this T item) {
+    FieldInfo[] fis = item.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+    object tempMyClass = Activator.CreateInstance(item.GetType());
+    foreach (FieldInfo fi in fis)    {
+        if (fi.FieldType.Namespace != item.GetType().Namespace)
+            fi.SetValue(tempMyClass, fi.GetValue(item));
+        else
+        {
+            object obj = fi.GetValue(item);
+            if (obj != null)
+                fi.SetValue(tempMyClass, obj.Clone());
+        }
+    }
+    return (T)tempMyClass;
+}
+```
+
+
 ## Datetime
 
 ### Parsing
@@ -103,6 +243,10 @@ var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
 
 ### Tracing serialization deseralization
 ```csharp
+
+//DiagnosticsTraceWriter diagTrace = new DiagnosticsTraceWriter();
+//diagTrace.LevelFilter = System.Diagnostics.TraceLevel.Verbose;
+
 ITraceWriter traceWriter = new MemoryTraceWriter();
 TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
 	new JsonSerializerSettings { 
@@ -114,6 +258,12 @@ TestJson state = JsonConvert.DeserializeObject<TestJson>(value,
 ```
 
 ## Collections
+
+### List static init
+
+```csharp
+new List<EntityType>() {EntityType.Company, EntityType.CompanyUnit, EntityType.Device, EntityType.DeviceGroup}
+```
 
 ### Dictionary
 
@@ -238,11 +388,40 @@ waiter.Reset(); // set to block
 
 ```
 
-
-
 ### Wait for async task
 
-#### Execute wrapper task
+In an async operation, you spin up a new thread, wait for the thread to start, and then rejoin the original call. 
+
+The await keyword will by default wait for a task to complete and attempt to join the original SynchronizationContext that started the operation.
+
+Await captures the current SynchronizationContext, which includes information about the current thread, and by default automatically returns to that thread when finished.
+
+### Run async method as a task in sync method
+
+```csharp
+void MySyncMethod(){
+    Task.Run(() => _sim.TriggerMergeFiles());
+}
+```
+
+#### Wait on  result property value
+
+```csharp
+async Task<bool> LoadFirstTime(){
+    await Task.Delay(1000);
+}
+
+// await on task via Result properts
+if (LoadFirstTime().Result == false)
+```
+
+#### Via Wait()
+
+```csharp
+Task.Run(() => ReadConfiguration()).Wait();
+```
+
+#### Execute task wait on result sync
 
 ```csharp
 Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until async completes
@@ -254,6 +433,9 @@ Task.Run(ASYNC_METHOD_NAME).GetAwaiter().GetResult(); // block thread until asyn
 var r = producer.ProduceAsync(tempTopic.Name, new Message<Null, string> { Value = "a message" }).Result;
 Assert.True(r.Status == PersistenceStatus.Persisted);
 ```
+
+
+
 
 ### Lazy initialization
 
@@ -279,6 +461,24 @@ var configuredOptionTypes =
 
 ## Reflection
 
+### Get property values of object
+
+```csharp
+Type t = e.GetType();
+IList<PropertyInfo> props = new List<PropertyInfo>(t.GetProperties());
+foreach (PropertyInfo prop in props) {
+    if (prop.Name == "X") {
+        object propValue = prop.GetValue(e, null);
+        _x = Convert.ToInt32(propValue);
+    }
+}
+```
+### Enumerate enum members
+
+```csharp
+foreach (EntityType suit in (EntityType[])Enum.GetValues(typeof(EntityType))){}
+```
+
 ### Get method name
 
 ```csharp
@@ -298,6 +498,18 @@ foreach (var methodInfo in tst.GetType().GetMethods())
     }
 }
 ```
+
+### Get all interface implementors from assembly
+
+```csharp
+// searchin all types implementing IAutostartService
+foreach (var a in AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
+    .Where(x => typeof(IAutostartService).IsAssignableFrom(x)))
+{
+    autostartServices.AddRange(services.Where(s => s.ImplementationType == a));
+}
+```
+
 
 ## Json handling
 
@@ -343,6 +555,22 @@ JObject d = new JObject();
 d["Type"] = "Fan";
 d["Name"] = "Fan";
 arr.Add(d);
+```
+
+## Logging
+
+### Nlog create logger
+
+#### Create logger from config and use it right away
+
+```csharp
+protected static Logger logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+```
+
+#### From logger manager
+
+```csharp
+protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
 ```
 
 ## Unit testing
@@ -401,6 +629,21 @@ private static bool IsAscii(char c);
 _logger.Info("Read complited in {0}", DateTimeOffset.Now.ToUnixTimeMilliseconds() - start);
 ```
 
+### String interpolation
 
+```csharp
+string tmpl = @"We have {@controller} with {@device}"; // template setup
+string res = Interpolate(tmpl); // We have ctrl1 with Dev2
 
+string Interpolate(string template) {
+    if (template == null) throw new ArgumentNullException(nameof(template), "Empty template");
+    
+    var parameters = new Dictionary<string, object>();
+    parameters.Add("{@controller}", "ctrl1"); // set somehow
+    parameters.Add("{@device}", "Dev2"); // set somehow
+    
+    string str = parameters.Aggregate(template, (current, parameter) => current.Replace(parameter.Key, parameter.Value.ToString()));
+    return str;
+}
+```
 
