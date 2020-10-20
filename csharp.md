@@ -12,21 +12,75 @@ Debugger.Break();
 Console.WriteLine(new System.Diagnostics.StackTrace());
 ```
 
+### Stopwatch time recording
+
+```csharp
+private long timeSpentMs = 0;
+var watch = new System.Diagnostics.Stopwatch();
+watch.Start();
+// do something time consuming
+watch.Stop();
+timeSpentMs += watch.ElapsedMilliseconds;
+```
+
+
 ## Language
 
+### var
+
+"var" is not a type. "var" simply means "compiler, the type of this variable is the type of its initializer"
+
 ### Cast and type check
+
+#### Is and As operators
 
 ```csharp
 if ((propExp is string))
     string newVariable = propExp as string;
 ```
 
-Merge cast with type check
+### Merge cast with type check
 
 ```csharp
-if ((propExp is string newVariable))
-newVariable // is string
+// FactoryUnitEntity factoryUnit = ent as FactoryUnitEntity;
+// if (factoryUnit != null) {}
+if (ent is FactoryUnitEntity factoryUnit)   // pattern matching
 ```
+
+
+### Using statement
+
+```csharp
+
+public sealed class MyStopwatch : IDisposable
+{
+    Stopwatch _sw;
+
+    public MyStopwatch()
+    {
+        _sw = Stopwatch.StartNew();
+    }
+
+    private bool disposed = false;
+
+    public void Dispose() // called on exiting using block
+    {
+        if (!disposed)
+        {
+            Console.Write("{Message}: {ElapsedMilliseconds}ms", _sw.ElapsedMilliseconds);
+            disposed = true;
+        }
+    }
+}
+
+using (new MyStopwatch())
+{
+    // your code
+}
+
+
+```
+
 
 
 ## Statements
@@ -87,7 +141,10 @@ IEnumerable<SomeNode> Flatten(SomeNode node)
 ### Assign anonymous delegate handler
 
 ```csharp
-someDelegate += delegate (string name) { return name.ToUpper(); };
+someDelegate += delegate (string name)/* fun signature args */
+    {                              
+        return name.ToUpper();   // function body
+    };
 ```
 
 ### Custom event args (returning values)
@@ -198,6 +255,27 @@ internal T TryGetValue<T>(out T value)
 }
 ```
 
+```csharp
+public bool TryGetValue<T>(string key, out T value) where T: class
+{
+    MyDataItem di;
+    if (typeof(T) == typeof(MyDataItem))
+    {
+        bool ret = TryGetMyDataItem(key, out di);
+        value = di as T;
+        return ret;
+    }
+
+    if (!_dictionary.TryGetValue(key, out di)) 
+    {
+        value = default(T);
+        return false;
+    }
+
+    return di.Value.TryGetValue<T>(out value);
+}
+```
+
 ### Generics and reflection - hard copy object
 
 ```csharp
@@ -232,12 +310,42 @@ DateTime.UtcNow.ToUnixSeconds();
 ```
 ## JSON via Newtonsoft JSON.NET
 
-### Deserializing
+### Checking json token type 
 
 ```csharp
-var dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
+(value is JToken && (value as JToken).Type == JTokenType.Null)
+```
+
+## Write json effective
+
+```csharp
+var json = new JObject(
+        new JProperty("status", result.Status.ToString()),
+        new JProperty("results", new JObject(result.Entries.Select(pair =>
+            new JProperty(pair.Key, new JObject(
+                new JProperty("status", pair.Value.Status.ToString()),
+                new JProperty("description", pair.Value.Description),
+                new JProperty("data", new JObject(pair.Value.Data.Select(
+                    p => new JProperty(p.Key, p.Value))))))))));
+
+json.ToString(Formatting.Indented); // to string
+```
+
+
+### Deserializing
+
+#### To dictionary
+
+```csharp
+Dictionary<string, object> dd = JsonConvert.DeserializeObject<ConnectorDeltaMsg>(msg,
 	new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace }
 );
+```
+
+#### To POCO object
+
+```csharp
+Album album = jalbum.ToObject<Album>();
 ```
 
 
@@ -363,6 +471,22 @@ File.SetLastWriteTimeUtc(fileName, DateTime.UtcNow);
 
 ## Threading and concurrency
 
+### Task.run
+
+The Task.Run method queues code to run on a different thread (usually from the "thread pool").
+Task.Run returns a Task which means you can use the await keyword with it
+
+await >> IO bound operations
+Task.Run >> CPU bounded operations 
+
+
+```csharp
+void MySyncMethod(){
+    Task.Run(() => _sim.TriggerMergeFiles());
+}
+```
+
+
 ### Get current thread id
 ```csharp
 Thread.CurrentThread.ManagedThreadId
@@ -387,6 +511,73 @@ waiter.Set(); // signal to unblock
 waiter.Reset(); // set to block
 
 ```
+
+### Monitor
+
+```csharp
+bool lockTaken = false;  // prevent leaked lock
+try
+{
+    // Determines whether the current thread holds the lock on the specified object.
+    // if (Monitor.IsEntered(lockContextObject))      
+
+    Monitor.Enter(lockContextObject, ref lockTaken);  // enter lock, specific lockContextObject (this, or collection, or object
+
+}
+finally
+{
+    if (lockTaken) Monitor.Exit(lockContextObject);
+}
+```
+
+###  ReadWrite Lock
+
+1. Create lock
+
+```csharp
+private readonly ReaderWriterLockSlim readWriteLock = new ReaderWriterLockSlim();
+```
+
+1. Read lock
+```csharp
+try
+{
+    readWriteLock.EnterReadLock();
+    
+}
+finally
+{
+    readWriteLock.ExitReadLock();
+}
+```
+
+1. Write lock
+```csharp
+try
+{
+    this.readWriteLock.EnterWriteLock();
+}
+finally
+{
+    this.readWriteLock.ExitWriteLock();
+}
+```
+
+
+### Linked cancelation token
+
+```csharp
+var timeoutToken = new CancellationTokenSource(Options.ShutdownTimeout).Token;
+if (!cancellationToken.CanBeCanceled)
+{
+    cancellationToken = timeoutToken;
+}
+else
+{
+    cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutToken).Token;
+}
+```
+
 
 ### Wait for async task
 
@@ -473,10 +664,24 @@ foreach (PropertyInfo prop in props) {
     }
 }
 ```
-### Enumerate enum members
+
+### Enums
+
+#### Enumerate enum members
 
 ```csharp
 foreach (EntityType suit in (EntityType[])Enum.GetValues(typeof(EntityType))){}
+```
+
+#### Enum from string name
+
+```csharp
+string stringValue = Enum.GetName(typeof(EnumDisplayStatus), dbValue);
+```
+
+#### Enum from object 
+```csharp
+isPrimaryController = (PrimaryController) Enum.ToObject(typeof(PrimaryController), primaryControllerStr);
 ```
 
 ### Get method name
@@ -557,6 +762,15 @@ d["Name"] = "Fan";
 arr.Add(d);
 ```
 
+### Using expando object to constrtuct jobject
+
+```csharp
+// workaround : remap related entititzes into jobject 
+dynamic relatedEntititesWrapper = new ExpandoObject();
+relatedEntititesWrapper.RelatedEntities = simIndex.RelatedEntities;
+simIndexToSave.SetContent(JObject.FromObject(relatedEntititesWrapper));
+```
+
 ## Logging
 
 ### Nlog create logger
@@ -622,6 +836,16 @@ private static bool IsAscii(char c);
 
 ## Recepies
 
+### Regular expressions
+
+```csharp
+public static string GetTitleFromHtml(string html)
+{
+    Match match = new Regex(@".*<head>.*<title>(.*)</title>.*</head>.*", RegexOptions.IgnoreCase | RegexOptions.Singleline).Match(html);
+    return match.Success ? match.Groups[1].Value : null;
+}
+```
+
 ### Manual stopwatch - Tracking execution time
 ```csharp
  long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -647,3 +871,8 @@ string Interpolate(string template) {
 }
 ```
 
+### GC memorty management
+
+```csharp
+GC.Collect(2, GCCollectionMode.Forced, true, true); // forcefully collect
+ ```

@@ -9,3 +9,8 @@ Language tutorials with quick reference sheet and code samples.
 
 ### ASPNET Core reference
 [CSharp programming language](aspnetcore.md). Kestrel, MVC, Routing, Razor and hosting reference.
+
+### ASPNET Dependency injection
+[CSharp programming language](netcoredi.md). Kestrel, MVC, Routing, Razor and hosting reference.
+
+
