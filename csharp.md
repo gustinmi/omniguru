@@ -836,6 +836,16 @@ private static bool IsAscii(char c);
 
 ## Recepies
 
+### Console
+
+```csharp
+Console.ForegroundColor = ConsoleColor.White;
+Console.WriteLine("Enter a greeting to send and press ENTER: ");
+Console.Write(">>> ");
+Console.ForegroundColor = ConsoleColor.Green;
+string greeting = Console.ReadLine();
+```
+
 ### Regular expressions
 
 ```csharp
