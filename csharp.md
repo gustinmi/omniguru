@@ -886,3 +886,34 @@ string Interpolate(string template) {
 ```csharp
 GC.Collect(2, GCCollectionMode.Forced, true, true); // forcefully collect
  ```
+
+# Documentation
+
+## Explaining code 
+
+### Indicating which exceptions are thrown
+
+```xml
+<exception cref="T:System.ArgumentOutOfRangeException">
+```
+	
+## References
+
+## Referencing class with 
+
+```xml
+<see cref="P:System.ServiceModel.Dispatcher.ClientRuntime.MessageInspectors" />
+```
+
+### Referencing parameter
+
+```xml
+<paramref name="correlationState" />
+```
+
+### Referencing build-in keyword
+<see langword="null" />
+
+
+
+
